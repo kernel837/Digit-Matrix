@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digit Matrix Auto-Trader</title>
     
+    <!-- PWA Manifest Link -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111827">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,11 +24,13 @@
 
     <div class="max-w-2xl mx-auto space-y-3">
         
+        <!-- PWA Install Banner -->
         <div id="installBanner" class="hidden bg-purple-600 rounded-xl p-3 shadow-lg flex justify-between items-center border-b-4 border-purple-800 animate-pulse">
             <span class="text-white font-bold text-sm tracking-wide">📲 Install Digit Matrix App!</span>
             <button onclick="installPWA()" class="bg-white text-purple-900 font-black py-2 px-5 rounded-lg shadow uppercase text-[10px] tracking-widest hover:bg-gray-200 transition-colors">Install</button>
         </div>
 
+        <!-- Header -->
         <div class="bg-gray-800 p-3 rounded-xl shadow-lg border-b-4 border-purple-500 flex justify-between items-center">
             <div>
                 <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">Strategy Engine</span>
@@ -45,6 +48,7 @@
             </div>
         </div>
 
+        <!-- Official OAuth Login Section -->
         <div id="oauthSection" class="bg-gray-800 p-4 rounded-xl shadow-lg flex flex-col justify-center border border-gray-700">
             <div class="flex items-center justify-between w-full">
                 <div>
@@ -60,6 +64,7 @@
             </div>
         </div>
 
+        <!-- Manual Token Fallback (Hidden by Default) -->
         <div id="manualTokenSection" class="hidden bg-gray-800 p-3 rounded-xl shadow-lg gap-2 items-end border border-gray-700">
             <div class="flex-1">
                 <label class="block text-[10px] font-medium text-gray-400 mb-0.5">API Token (pat_...)</label>
@@ -70,6 +75,7 @@
             </button>
         </div>
 
+        <!-- Trade Parameters -->
         <div class="bg-gray-800 p-4 rounded-xl shadow-lg grid grid-cols-2 md:grid-cols-5 gap-3">
             <div class="col-span-2">
                 <label class="block text-[10px] font-medium text-gray-400 mb-0.5 uppercase tracking-wider">Starting Market</label>
@@ -106,6 +112,7 @@
             </div>
         </div>
 
+        <!-- Toggles & Execution -->
         <div class="bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700">
             <div class="flex flex-wrap gap-4 items-center justify-between mb-4">
                 
@@ -132,6 +139,7 @@
             </button>
         </div>
 
+        <!-- Advanced Market Stats -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div class="md:col-span-2 bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700">
                 <div class="flex justify-between items-center mb-3 border-b border-gray-700 pb-2">
@@ -164,6 +172,7 @@
             </div>
         </div>
 
+        <!-- Trade Transactions Log -->
         <div class="bg-gray-800 p-3 rounded-xl shadow-lg border border-gray-700 mb-6">
             <div class="flex justify-between items-center mb-2 px-2">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transactions / Terminal</span>
@@ -177,9 +186,7 @@
     </div>
 
     <script>
-        // ==========================================
-        // UI TOGGLES & PWA
-        // ==========================================
+        // UI Toggles & PWA
         function toggleFallback() {
             document.getElementById('oauthSection').classList.add('hidden');
             document.getElementById('manualTokenSection').classList.remove('hidden');
@@ -205,13 +212,15 @@
         }
 
         // ==========================================
-        // DERIV OAUTH 2.0 INTEGRATION
+        // FIXED DERIV OAUTH 2.0 VIA AMY'S UPDATE
         // ==========================================
         const APP_ID = '33D0DAH4aS5gAdqG1EIOK'; 
+        const REDIRECT_URI = 'https://kernel837.github.io/Digit-Matrix/';
         let currentDerivToken = null;
 
         function loginWithDeriv() {
-            window.location.href = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}`;
+            // Replaced legacy domain with the active auth endpoints requested by Amy
+            window.location.href = `https://auth.deriv.com/oauth2/auth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token`;
         }
 
         function logout() {
@@ -241,9 +250,7 @@
             }
         });
 
-        // ==========================================
-        // CORE TRADING LOGIC
-        // ==========================================
+        // Core variables
         let ws = null;
         let isAuthorized = false;
         let isTrading = false;
@@ -311,14 +318,12 @@
             if(ws) { ws.close(); return; }
             
             let tokenToUse = currentDerivToken;
-            let activeAppId = APP_ID; // Use custom App ID for OAuth by default
+            let activeAppId = APP_ID; 
             
             if (isManual) {
-                // The ultimate fallback regex: Strips everything except letters, numbers, and underscores
                 const rawToken = document.getElementById('apiToken').value;
                 tokenToUse = rawToken.replace(/[^a-zA-Z0-9_]/g, ''); 
-                activeAppId = '1089'; // Revert to standard App ID for raw PATs
-                
+                activeAppId = '1089'; 
                 if(!tokenToUse) { alert("Please enter your API token"); return; }
             } else if (!currentDerivToken && !isAutoSwitching) {
                 logTrade("Please use the Login button to authenticate.", "error"); 
