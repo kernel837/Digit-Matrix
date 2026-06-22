@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digit Matrix Auto-Trader</title>
     
-    <!-- PWA Manifest Link -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111827">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -24,13 +23,11 @@
 
     <div class="max-w-2xl mx-auto space-y-3">
         
-        <!-- PWA Install Banner -->
         <div id="installBanner" class="hidden bg-purple-600 rounded-xl p-3 shadow-lg flex justify-between items-center border-b-4 border-purple-800 animate-pulse">
             <span class="text-white font-bold text-sm tracking-wide">📲 Install Digit Matrix App!</span>
             <button onclick="installPWA()" class="bg-white text-purple-900 font-black py-2 px-5 rounded-lg shadow uppercase text-[10px] tracking-widest hover:bg-gray-200 transition-colors">Install</button>
         </div>
 
-        <!-- Header -->
         <div class="bg-gray-800 p-3 rounded-xl shadow-lg border-b-4 border-purple-500 flex justify-between items-center">
             <div>
                 <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">Strategy Engine</span>
@@ -48,7 +45,6 @@
             </div>
         </div>
 
-        <!-- Official OAuth Login Section -->
         <div id="oauthSection" class="bg-gray-800 p-4 rounded-xl shadow-lg flex flex-col justify-center border border-gray-700">
             <div class="flex items-center justify-between w-full">
                 <div>
@@ -64,7 +60,6 @@
             </div>
         </div>
 
-        <!-- Manual Token Fallback (Hidden by Default) -->
         <div id="manualTokenSection" class="hidden bg-gray-800 p-3 rounded-xl shadow-lg gap-2 items-end border border-gray-700">
             <div class="flex-1">
                 <label class="block text-[10px] font-medium text-gray-400 mb-0.5">API Token (pat_...)</label>
@@ -75,7 +70,6 @@
             </button>
         </div>
 
-        <!-- Trade Parameters -->
         <div class="bg-gray-800 p-4 rounded-xl shadow-lg grid grid-cols-2 md:grid-cols-5 gap-3">
             <div class="col-span-2">
                 <label class="block text-[10px] font-medium text-gray-400 mb-0.5 uppercase tracking-wider">Starting Market</label>
@@ -112,7 +106,6 @@
             </div>
         </div>
 
-        <!-- Toggles & Execution -->
         <div class="bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700">
             <div class="flex flex-wrap gap-4 items-center justify-between mb-4">
                 
@@ -139,7 +132,6 @@
             </button>
         </div>
 
-        <!-- Advanced Market Stats -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div class="md:col-span-2 bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700">
                 <div class="flex justify-between items-center mb-3 border-b border-gray-700 pb-2">
@@ -172,55 +164,66 @@
             </div>
         </div>
 
-        <!-- Trade Transactions Log -->
         <div class="bg-gray-800 p-3 rounded-xl shadow-lg border border-gray-700 mb-6">
             <div class="flex justify-between items-center mb-2 px-2">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transactions / Terminal</span>
                 <span id="activeTradesCount" class="text-[10px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded">0 Active Trades</span>
             </div>
             <div class="bg-gray-900 p-2 rounded-lg border border-gray-700 h-40 overflow-y-auto font-mono text-[10px] text-gray-300 space-y-1" id="tradeLog">
-                > System initialized. Ready for OAuth Login.
+                > System initialized. Ready for PKCE OAuth Login.
             </div>
         </div>
 
     </div>
 
     <script>
-        // UI Toggles & PWA
+        // UI Toggles
         function toggleFallback() {
             document.getElementById('oauthSection').classList.add('hidden');
             document.getElementById('manualTokenSection').classList.remove('hidden');
             document.getElementById('manualTokenSection').classList.add('flex');
         }
 
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(()=>{}); });
-        }
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); deferredPrompt = e;
-            document.getElementById('installBanner').classList.remove('hidden');
-        });
-        function installPWA() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((cr) => {
-                    if (cr.outcome === 'accepted') document.getElementById('installBanner').classList.add('hidden');
-                    deferredPrompt = null;
-                });
-            }
-        }
-
         // ==========================================
-        // FIXED DERIV OAUTH 2.0 VIA AMY'S UPDATE
+        // PKCE OAUTH 2.0 IMPLEMENTATION (NEW)
         // ==========================================
         const APP_ID = '33D0DAH4aS5gAdqG1EIOK'; 
         const REDIRECT_URI = 'https://kernel837.github.io/Digit-Matrix/';
         let currentDerivToken = null;
 
-        function loginWithDeriv() {
-            // Replaced legacy domain with the active auth endpoints requested by Amy
-            window.location.href = `https://auth.deriv.com/oauth2/auth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token`;
+        // Cryptography helpers for PKCE
+        function generateRandomString(length) {
+            const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+            let result = '';
+            const values = new Uint8Array(length);
+            window.crypto.getRandomValues(values);
+            for (let i = 0; i < length; i++) result += charset[values[i] % charset.length];
+            return result;
+        }
+
+        async function generateCodeChallenge(codeVerifier) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(codeVerifier);
+            const digest = await window.crypto.subtle.digest('SHA-256', data);
+            let binary = '';
+            const bytes = new Uint8Array(digest);
+            for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+            return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        }
+
+        // Login Handler
+        async function loginWithDeriv() {
+            const codeVerifier = generateRandomString(64);
+            const state = generateRandomString(16);
+            
+            sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+            sessionStorage.setItem('pkce_state', state);
+
+            const codeChallenge = await generateCodeChallenge(codeVerifier);
+            
+            // Generate the secure code-request URL
+            const authUrl = `https://auth.deriv.com/oauth2/auth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&code_challenge=${codeChallenge}&code_challenge_method=S256&state=${state}`;
+            window.location.href = authUrl;
         }
 
         function logout() {
@@ -230,27 +233,74 @@
             window.location.reload(); 
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        // Check for return from Deriv Login
+        document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token1');
+            const code = urlParams.get('code');
+            const returnedState = urlParams.get('state');
+            const error = urlParams.get('error');
 
-            if (token) {
-                currentDerivToken = token;
-                window.history.replaceState({}, document.title, window.location.pathname);
+            if (error) {
+                logTrade(`OAuth Error: ${urlParams.get('error_description')}`, 'error');
+                return;
+            }
 
-                document.getElementById('authStatus').textContent = "Authenticated ✅";
-                document.getElementById('authStatus').className = "text-sm font-bold text-emerald-400";
+            if (code) {
+                // Background Trade: Exchanging Code for Token
+                logTrade("Verifying PKCE Handshake...", "warn");
                 
-                const btn = document.getElementById('loginBtn');
-                btn.textContent = "Disconnect & Logout";
-                btn.className = "bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-lg border-b-4 border-gray-800 active:border-b-0 active:mt-1 uppercase tracking-wider text-sm";
-                btn.onclick = logout;
+                const savedState = sessionStorage.getItem('pkce_state');
+                const codeVerifier = sessionStorage.getItem('pkce_code_verifier');
 
-                connectToServer();
+                if (returnedState !== savedState) {
+                    logTrade("Security Error: State mismatch.", 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('https://auth.deriv.com/oauth2/token', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({
+                            client_id: APP_ID,
+                            grant_type: 'authorization_code',
+                            code: code,
+                            redirect_uri: REDIRECT_URI,
+                            code_verifier: codeVerifier
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.access_token) {
+                        currentDerivToken = data.access_token;
+                        
+                        // Clean the URL bar so the security code isn't sitting there
+                        window.history.replaceState({}, document.title, window.location.pathname);
+
+                        document.getElementById('authStatus').textContent = "Authenticated ✅";
+                        document.getElementById('authStatus').className = "text-sm font-bold text-emerald-400";
+                        
+                        const btn = document.getElementById('loginBtn');
+                        btn.textContent = "Disconnect & Logout";
+                        btn.className = "bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-lg border-b-4 border-gray-800 active:border-b-0 active:mt-1 uppercase tracking-wider text-sm";
+                        btn.onclick = logout;
+
+                        // Proceed to connect to WS automatically
+                        connectToServer();
+                    } else {
+                        logTrade("Token Exchange Failed: Check Developer Dashboard Settings", "error");
+                    }
+                } catch (err) {
+                    logTrade("Network Error during token exchange.", "error");
+                }
             }
         });
 
-        // Core variables
+
+        // ==========================================
+        // CORE TRADING LOGIC
+        // ==========================================
         let ws = null;
         let isAuthorized = false;
         let isTrading = false;
