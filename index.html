@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digit Matrix Auto-Trader</title>
     
-    <!-- PWA Manifest Link -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111827">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -24,13 +23,11 @@
 
     <div class="max-w-2xl mx-auto space-y-3">
         
-        <!-- PWA Install Banner -->
         <div id="installBanner" class="hidden bg-purple-600 rounded-xl p-3 shadow-lg flex justify-between items-center border-b-4 border-purple-800 animate-pulse">
             <span class="text-white font-bold text-sm tracking-wide">📲 Install Digit Matrix App!</span>
             <button onclick="installPWA()" class="bg-white text-purple-900 font-black py-2 px-5 rounded-lg shadow uppercase text-[10px] tracking-widest hover:bg-gray-200 transition-colors">Install</button>
         </div>
 
-        <!-- Header -->
         <div class="bg-gray-800 p-3 rounded-xl shadow-lg border-b-4 border-purple-500 flex justify-between items-center">
             <div>
                 <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">Strategy Engine</span>
@@ -48,18 +45,16 @@
             </div>
         </div>
 
-        <!-- Token & Connect -->
-        <div class="bg-gray-800 p-3 rounded-xl shadow-lg flex gap-2 items-end">
-            <div class="flex-1">
-                <label class="block text-[10px] font-medium text-gray-400 mb-0.5">API Trading Token (Supports New pat_ Format)</label>
-                <input type="password" id="apiToken" placeholder="Paste your Read/Trade API token here..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500 font-mono text-sm">
+        <div class="bg-gray-800 p-4 rounded-xl shadow-lg flex items-center justify-between border border-gray-700">
+            <div>
+                <span class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Deriv API Connection</span>
+                <span class="text-sm font-bold text-rose-500" id="authStatus">Disconnected 🔴</span>
             </div>
-            <button id="connectBtn" onclick="connectToServer()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg border-b-4 border-purple-800 active:border-b-0 active:mt-1 uppercase tracking-wider">
-                Connect API
+            <button id="loginBtn" onclick="loginWithDeriv()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-lg border-b-4 border-rose-800 active:border-b-0 active:mt-1 uppercase tracking-wider text-sm">
+                Login with Deriv
             </button>
         </div>
 
-        <!-- Trade Parameters -->
         <div class="bg-gray-800 p-4 rounded-xl shadow-lg grid grid-cols-2 md:grid-cols-5 gap-3">
             <div class="col-span-2">
                 <label class="block text-[10px] font-medium text-gray-400 mb-0.5 uppercase tracking-wider">Starting Market</label>
@@ -96,7 +91,6 @@
             </div>
         </div>
 
-        <!-- Toggles & Execution -->
         <div class="bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700">
             <div class="flex flex-wrap gap-4 items-center justify-between mb-4">
                 
@@ -123,7 +117,6 @@
             </button>
         </div>
 
-        <!-- Advanced Market Stats -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div class="md:col-span-2 bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700">
                 <div class="flex justify-between items-center mb-3 border-b border-gray-700 pb-2">
@@ -135,16 +128,13 @@
                 </div>
 
                 <div class="grid grid-cols-5 gap-2">
-                    <!-- Over 2 Target Digits -->
                     <div id="dist-0" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all"><span class="font-black text-purple-400 text-xl">0</span><span id="dist-pct-0" class="text-[11px] font-bold mt-1 text-gray-400">0%</span></div>
                     <div id="dist-1" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all"><span class="font-black text-purple-400 text-xl">1</span><span id="dist-pct-1" class="text-[11px] font-bold mt-1 text-gray-400">0%</span></div>
                     <div id="dist-2" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all"><span class="font-black text-purple-400 text-xl">2</span><span id="dist-pct-2" class="text-[11px] font-bold mt-1 text-gray-400">0%</span></div>
-                    <!-- Neutral -->
                     <div id="dist-3" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all opacity-50"><span class="font-black text-gray-600 text-xl">3</span><span id="dist-pct-3" class="text-[11px] font-bold mt-1 text-gray-500">0%</span></div>
                     <div id="dist-4" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all opacity-50"><span class="font-black text-gray-600 text-xl">4</span><span id="dist-pct-4" class="text-[11px] font-bold mt-1 text-gray-500">0%</span></div>
                     <div id="dist-5" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all opacity-50"><span class="font-black text-gray-600 text-xl">5</span><span id="dist-pct-5" class="text-[11px] font-bold mt-1 text-gray-500">0%</span></div>
                     <div id="dist-6" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all opacity-50"><span class="font-black text-gray-600 text-xl">6</span><span id="dist-pct-6" class="text-[11px] font-bold mt-1 text-gray-500">0%</span></div>
-                    <!-- Under 7 Target Digits -->
                     <div id="dist-7" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all"><span class="font-black text-fuchsia-400 text-xl">7</span><span id="dist-pct-7" class="text-[11px] font-bold mt-1 text-gray-400">0%</span></div>
                     <div id="dist-8" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all"><span class="font-black text-fuchsia-400 text-xl">8</span><span id="dist-pct-8" class="text-[11px] font-bold mt-1 text-gray-400">0%</span></div>
                     <div id="dist-9" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all"><span class="font-black text-fuchsia-400 text-xl">9</span><span id="dist-pct-9" class="text-[11px] font-bold mt-1 text-gray-400">0%</span></div>
@@ -159,21 +149,65 @@
             </div>
         </div>
 
-        <!-- Trade Transactions Log -->
         <div class="bg-gray-800 p-3 rounded-xl shadow-lg border border-gray-700 mb-6">
             <div class="flex justify-between items-center mb-2 px-2">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transactions / Terminal</span>
                 <span id="activeTradesCount" class="text-[10px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded">0 Active Trades</span>
             </div>
             <div class="bg-gray-900 p-2 rounded-lg border border-gray-700 h-40 overflow-y-auto font-mono text-[10px] text-gray-300 space-y-1" id="tradeLog">
-                > System initialized. Ready to process tokens.
+                > System initialized. Ready for OAuth Login.
             </div>
         </div>
 
     </div>
 
     <script>
-        // PWA Setup
+        // ==========================================
+        // DERIV OAUTH 2.0 INTEGRATION
+        // ==========================================
+        const APP_ID = '33D0DAH4aS5gAdqG1EIOK'; // IMPORTANT: If login fails, replace this with your numeric App ID (e.g. 1089)
+        let currentDerivToken = null;
+
+        function loginWithDeriv() {
+            window.location.href = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}`;
+        }
+
+        function logout() {
+            currentDerivToken = null;
+            if(ws) ws.close();
+            // Clear URL and refresh to wipe session
+            window.history.replaceState({}, document.title, window.location.pathname);
+            window.location.reload(); 
+        }
+
+        // On Page Load: Check if Deriv just redirected us back with a token in the URL
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token1');
+
+            if (token) {
+                currentDerivToken = token;
+                
+                // Security: Strip the token out of the URL bar so it isn't visible or logged
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                // Update UI to show Authenticated State
+                document.getElementById('authStatus').textContent = "Authenticated ✅";
+                document.getElementById('authStatus').className = "text-sm font-bold text-emerald-400";
+                
+                const btn = document.getElementById('loginBtn');
+                btn.textContent = "Disconnect & Logout";
+                btn.className = "bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-lg border-b-4 border-gray-800 active:border-b-0 active:mt-1 uppercase tracking-wider text-sm";
+                btn.onclick = logout;
+
+                // Launch WebSocket Connection Automatically
+                connectToServer();
+            }
+        });
+
+        // ==========================================
+        // PWA SETUP
+        // ==========================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(()=>{}); });
         }
@@ -192,7 +226,9 @@
             }
         }
 
-        // Core Variables
+        // ==========================================
+        // CORE TRADING VARIABLES
+        // ==========================================
         let ws = null;
         let isAuthorized = false;
         let isTrading = false;
@@ -205,7 +241,6 @@
         let currentStake = 1.00; 
         let lossCountInBatch = 0; 
 
-        const connectBtn = document.getElementById('connectBtn');
         const runBulkBtn = document.getElementById('runBulkBtn');
         const tradeLogEl = document.getElementById('tradeLog');
         const sessionProfitEl = document.getElementById('sessionProfit');
@@ -260,11 +295,10 @@
         function connectToServer(autoSwitch = false) {
             if(ws) { ws.close(); return; }
             
-            // SECURITY FIX: Replaces ALL invisible spaces, tabs, and line breaks from the string.
-            const rawToken = document.getElementById('apiToken').value;
-            const token = rawToken.replace(/\s+/g, ''); 
-            
-            if(!token) { alert("Please enter your API token"); return; }
+            if(!currentDerivToken) { 
+                logTrade("Please use the Login button to authenticate.", "error"); 
+                return; 
+            }
             
             isTrading = false;
             isSearchingPattern = false;
@@ -283,15 +317,13 @@
             }
 
             updateActiveContracts(0);
-            connectBtn.textContent = 'Connecting...';
-            connectBtn.className = "bg-amber-500 text-gray-900 font-bold py-2 px-6 rounded-lg transition-colors shadow-lg uppercase tracking-wider";
 
             ws = new WebSocket("wss://ws.binaryws.com/websockets/v3?app_id=1089");
-            ws.onopen = () => { ws.send(JSON.stringify({ authorize: token })); };
+            ws.onopen = () => { ws.send(JSON.stringify({ authorize: currentDerivToken })); };
 
             ws.onerror = () => {
-                logTrade("Connection failed.", 'error');
-                if(!isAutoSwitching) disconnectFromDeriv();
+                logTrade("WebSocket connection failed.", 'error');
+                if(!isAutoSwitching) logout();
             };
 
             ws.onmessage = (msg) => {
@@ -300,12 +332,10 @@
                 if(data.msg_type === 'authorize') {
                     if(data.error) {
                         logTrade("Auth Failed: " + data.error.message, 'error');
-                        disconnectFromDeriv();
+                        logout();
                         return;
                     }
                     isAuthorized = true;
-                    connectBtn.textContent = 'Disconnect';
-                    connectBtn.className = "bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg border-b-4 border-rose-800 active:border-b-0 active:mt-1 uppercase tracking-wider";
                     runBulkBtn.disabled = false;
                     document.getElementById('headerBalance').textContent = "$" + data.authorize.balance.toFixed(2);
                     matrixStatusTextEl.textContent = "Gathering Data...";
@@ -351,9 +381,6 @@
                         if (openContracts <= 0) finalizeBatch();
                     }
                 }
-            };
-            ws.onclose = () => {
-                if (!isAutoSwitching) disconnectFromDeriv();
             };
         }
 
@@ -467,26 +494,6 @@
             }
         }
 
-        function disconnectFromDeriv() {
-            isAuthorized = false;
-            isTrading = false;
-            isSearchingPattern = false;
-            ws = null;
-            
-            connectBtn.textContent = 'Connect API';
-            connectBtn.className = "bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg border-b-4 border-purple-800 active:border-b-0 active:mt-1 uppercase tracking-wider";
-            runBulkBtn.disabled = true;
-            runBulkBtn.innerHTML = "▶ START DIGIT MATRIX";
-            runBulkBtn.className = "w-full bg-gray-600 text-gray-400 font-black py-4 rounded-xl transition-all uppercase tracking-widest text-lg cursor-not-allowed";
-
-            document.getElementById('headerBalance').textContent = "-";
-            livePriceTickEl.textContent = "-";
-            matrixStatusTextEl.textContent = "Offline";
-            matrixStatusTextEl.className = "text-xs font-bold text-gray-500 mt-1";
-            openContracts = 0;
-            updateActiveContracts();
-        }
-
         function switchMarket() {
             if (isAuthorized) { ws.close(); setTimeout(() => connectToServer(), 500); }
         }
@@ -527,14 +534,12 @@
                 }
                 
                 if (i === lastDigit) boxClass += "shadow-[0_0_15px_rgba(255,255,255,0.2)] scale-105 border-white bg-gray-700";
-                
                 if (i >= 3 && i <= 6) boxClass += " opacity-50";
 
                 box.className = boxClass;
             }
 
             if (isSearchingPattern && !isTrading && total === 100) {
-                
                 const isOver2Ready = (pctArray[0] <= 10 && pctArray[1] <= 10 && pctArray[2] <= 10);
                 const isUnder7Ready = (pctArray[7] <= 10 && pctArray[8] <= 10 && pctArray[9] <= 10);
 
