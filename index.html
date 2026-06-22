@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digit Matrix Auto-Trader</title>
+    
+    <!-- PWA Manifest Link -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111827">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon.png">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1f2937; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-3 select-none text-xs font-sans">
+
+    <div class="max-w-2xl mx-auto space-y-3">
+        
+        <!-- PWA Install Banner -->
+        <div id="installBanner" class="hidden bg-purple-600 rounded-xl p-3 shadow-lg flex justify-between items-center border-b-4 border-purple-800 animate-pulse">
+            <span class="text-white font-bold text-sm tracking-wide">📲 Install Digit Matrix App!</span>
+            <button onclick="installPWA()" class="bg-white text-purple-900 font-black py-2 px-5 rounded-lg shadow uppercase text-[10px] tracking-widest hover:bg-gray-200 transition-colors">Install</button>
+        </div>
+
+        <!-- Header -->
+        <div class="bg-gray-800 p-3 rounded-xl shadow-lg border-b-4 border-purple-500 flex justify-between items-center">
+            <div>
+                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">Strategy Engine</span>
+                <span class="text-xl font-black text-white">DIGIT <span class="text-fuchsia-400">MATRIX</span></span>
+            </div>
+            <div class="text-right flex gap-4">
+                <div class="border-r border-gray-700 pr-4">
+                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">Session Profit</span>
+                    <div id="sessionProfit" class="text-2xl font-black text-gray-400">$0.00</div>
+                </div>
+                <div>
+                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">Balance</span>
+                    <div id="headerBalance" class="text-2xl font-black text-white">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Token & Connect -->
+        <div class="bg-gray-800 p-3 rounded-xl shadow-lg flex gap-2 items-end">
+            <div class="flex-1">
+                <label class="block text-[10px] font-medium text-gray-400 mb-0.5">API Trading Token (Supports New pat_ Format)</label>
+                <input type="password" id="apiToken" placeholder="Paste your Read/Trade API token here..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500 font-mono text-sm">
+            </div>
+            <button id="connectBtn" onclick="connectToServer()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg border-b-4 border-purple-800 active:border-b-0 active:mt-1 uppercase tracking-wider">
+                Connect API
+            </button>
+        </div>
+
+        <!-- Trade Parameters -->
+        <div class="bg-gray-800 p-4 rounded-xl shadow-lg grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div class="col-span-2">
+                <label class="block text-[10px] font-medium text-gray-400 mb-0.5 uppercase tracking-wider">Starting Market</label>
+                <select id="marketSelect" onchange="switchMarket()" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-white focus:outline-none focus:border-purple-500 font-bold">
+                    <optgroup label="Volatility (1s) Indices">
+                        <option value="1HZ10V" selected>Volatility 10 (1s)</option>
+                        <option value="1HZ25V">Volatility 25 (1s)</option>
+                        <option value="1HZ50V">Volatility 50 (1s)</option>
+                        <option value="1HZ75V">Volatility 75 (1s)</option>
+                        <option value="1HZ100V">Volatility 100 (1s)</option>
+                        <option value="1HZ150V">Volatility 150 (1s)</option>
+                        <option value="1HZ250V">Volatility 250 (1s)</option>
+                    </optgroup>
+                    <optgroup label="Continuous Volatility Indices">
+                        <option value="R_10">Volatility 10</option>
+                        <option value="R_25">Volatility 25</option>
+                        <option value="R_50">Volatility 50</option>
+                        <option value="R_75">Volatility 75</option>
+                        <option value="R_100">Volatility 100</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-medium text-gray-400 mb-0.5 uppercase tracking-wider">Stake ($)</label>
+                <input type="number" id="stake" value="1.00" step="0.5" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-center text-white font-bold focus:outline-none focus:border-purple-500">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-emerald-400 mb-0.5 uppercase tracking-wider">Target Profit</label>
+                <input type="number" id="targetProfit" value="100.00" class="w-full bg-gray-900 border border-emerald-500/50 rounded-lg px-2 py-1.5 text-center text-emerald-400 font-black focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-rose-400 mb-0.5 uppercase tracking-wider">Stop Loss</label>
+                <input type="number" id="stopLoss" value="100.00" class="w-full bg-gray-900 border border-rose-500/50 rounded-lg px-2 py-1.5 text-center text-rose-400 font-black focus:outline-none focus:border-rose-500">
+            </div>
+        </div>
+
+        <!-- Toggles & Execution -->
+        <div class="bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700">
+            <div class="flex flex-wrap gap-4 items-center justify-between mb-4">
+                
+                <div class="flex items-center gap-2 bg-gray-900 px-3 py-2 rounded-lg border border-gray-600">
+                    <input type="checkbox" id="switchMarketOnLoss" checked class="w-4 h-4 accent-fuchsia-500 cursor-pointer">
+                    <label class="text-[11px] font-bold text-fuchsia-400 uppercase tracking-wider cursor-pointer" for="switchMarketOnLoss">Switch Market After Loss</label>
+                </div>
+
+                <div class="flex items-center gap-2 bg-gray-900 px-3 py-2 rounded-lg border border-gray-600">
+                    <input type="checkbox" id="enableBulk" checked class="w-4 h-4 accent-purple-500 cursor-pointer">
+                    <label class="text-[11px] font-bold text-white uppercase tracking-wider cursor-pointer" for="enableBulk">Bulk Trades</label>
+                    <input type="number" id="bulkCount" value="10" min="1" max="20" class="w-16 bg-gray-700 border border-gray-600 rounded px-1.5 py-1 text-center text-white font-bold focus:outline-none focus:border-purple-500 ml-1">
+                </div>
+
+                <div class="flex items-center gap-2 bg-gray-900 px-3 py-2 rounded-lg border border-gray-600">
+                    <input type="checkbox" id="useMartingale" checked class="w-4 h-4 accent-rose-500 cursor-pointer">
+                    <label class="text-[11px] font-bold text-white uppercase tracking-wider cursor-pointer" for="useMartingale">Martingale</label>
+                    <input type="number" id="martingaleMultiplier" value="1.5" step="0.1" class="w-16 bg-gray-700 border border-gray-600 rounded px-1.5 py-1 text-center text-white font-bold focus:outline-none focus:border-rose-500 ml-1">
+                </div>
+            </div>
+
+            <button id="runBulkBtn" onclick="executeBot()" disabled class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-4 rounded-xl transition-all shadow-[0_0_15px_rgba(147,51,234,0.4)] border-b-4 border-purple-800 active:border-b-0 active:mt-1 uppercase tracking-widest text-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                ▶ START DIGIT MATRIX
+            </button>
+        </div>
+
+        <!-- Advanced Market Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="md:col-span-2 bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700">
+                <div class="flex justify-between items-center mb-3 border-b border-gray-700 pb-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-fuchsia-500 animate-pulse"></div>
+                        <span class="text-[11px] font-black text-white uppercase tracking-widest">Live Matrix Analysis</span>
+                    </div>
+                    <span class="text-[9px] text-gray-400 font-bold uppercase" id="tickCounter">Gathering Ticks...</span>
+                </div>
+
+                <div class="grid grid-cols-5 gap-2">
+                    <!-- Over 2 Target Digits -->
+                    <div id="dist-0" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all"><span class="font-black text-purple-400 text-xl">0</span><span id="dist-pct-0" class="text-[11px] font-bold mt-1 text-gray-400">0%</span></div>
+                    <div id="dist-1" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all"><span class="font-black text-purple-400 text-xl">1</span><span id="dist-pct-1" class="text-[11px] font-bold mt-1 text-gray-400">0%</span></div>
+                    <div id="dist-2" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all"><span class="font-black text-purple-400 text-xl">2</span><span id="dist-pct-2" class="text-[11px] font-bold mt-1 text-gray-400">0%</span></div>
+                    <!-- Neutral -->
+                    <div id="dist-3" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all opacity-50"><span class="font-black text-gray-600 text-xl">3</span><span id="dist-pct-3" class="text-[11px] font-bold mt-1 text-gray-500">0%</span></div>
+                    <div id="dist-4" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all opacity-50"><span class="font-black text-gray-600 text-xl">4</span><span id="dist-pct-4" class="text-[11px] font-bold mt-1 text-gray-500">0%</span></div>
+                    <div id="dist-5" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all opacity-50"><span class="font-black text-gray-600 text-xl">5</span><span id="dist-pct-5" class="text-[11px] font-bold mt-1 text-gray-500">0%</span></div>
+                    <div id="dist-6" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all opacity-50"><span class="font-black text-gray-600 text-xl">6</span><span id="dist-pct-6" class="text-[11px] font-bold mt-1 text-gray-500">0%</span></div>
+                    <!-- Under 7 Target Digits -->
+                    <div id="dist-7" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all"><span class="font-black text-fuchsia-400 text-xl">7</span><span id="dist-pct-7" class="text-[11px] font-bold mt-1 text-gray-400">0%</span></div>
+                    <div id="dist-8" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all"><span class="font-black text-fuchsia-400 text-xl">8</span><span id="dist-pct-8" class="text-[11px] font-bold mt-1 text-gray-400">0%</span></div>
+                    <div id="dist-9" class="flex flex-col items-center bg-gray-900 py-2 rounded-lg border border-gray-700 transition-all"><span class="font-black text-fuchsia-400 text-xl">9</span><span id="dist-pct-9" class="text-[11px] font-bold mt-1 text-gray-400">0%</span></div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700 flex flex-col justify-center items-center">
+                <span class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Live Price Tick</span>
+                <span id="livePriceTick" class="text-3xl font-black text-white font-mono tracking-wider">-</span>
+                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-4 border-t border-gray-700 pt-2 w-full text-center">Status</span>
+                <span id="matrixStatusText" class="text-xs font-bold text-gray-500 mt-1">Waiting for connection...</span>
+            </div>
+        </div>
+
+        <!-- Trade Transactions Log -->
+        <div class="bg-gray-800 p-3 rounded-xl shadow-lg border border-gray-700 mb-6">
+            <div class="flex justify-between items-center mb-2 px-2">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transactions / Terminal</span>
+                <span id="activeTradesCount" class="text-[10px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded">0 Active Trades</span>
+            </div>
+            <div class="bg-gray-900 p-2 rounded-lg border border-gray-700 h-40 overflow-y-auto font-mono text-[10px] text-gray-300 space-y-1" id="tradeLog">
+                > System initialized. Ready to process tokens.
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // PWA Setup
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+        }
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); deferredPrompt = e;
+            document.getElementById('installBanner').classList.remove('hidden');
+        });
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((cr) => {
+                    if (cr.outcome === 'accepted') document.getElementById('installBanner').classList.add('hidden');
+                    deferredPrompt = null;
+                });
+            }
+        }
+
+        // Core Variables
+        let ws = null;
+        let isAuthorized = false;
+        let isTrading = false;
+        let isSearchingPattern = false; 
+        let isAutoSwitching = false; 
+        
+        let sessionProfit = 0.00;
+        let tickHistory = [];
+        let openContracts = 0;
+        let currentStake = 1.00; 
+        let lossCountInBatch = 0; 
+
+        const connectBtn = document.getElementById('connectBtn');
+        const runBulkBtn = document.getElementById('runBulkBtn');
+        const tradeLogEl = document.getElementById('tradeLog');
+        const sessionProfitEl = document.getElementById('sessionProfit');
+        const marketSelect = document.getElementById('marketSelect');
+        const livePriceTickEl = document.getElementById('livePriceTick');
+        const tickCounterEl = document.getElementById('tickCounter');
+        const matrixStatusTextEl = document.getElementById('matrixStatusText');
+
+        function logTrade(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            let color = 'text-gray-300';
+            if(type === 'error') color = 'text-rose-500 font-bold';
+            if(type === 'warn') color = 'text-purple-400 font-bold';
+            if(type === 'win') color = 'text-emerald-400 font-black';
+            if(type === 'buy') color = 'text-fuchsia-400';
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = color;
+            logEntry.innerHTML = `[${time}] ${msg}`;
+            tradeLogEl.insertBefore(logEntry, tradeLogEl.firstChild);
+            if (tradeLogEl.children.length > 100) tradeLogEl.removeChild(tradeLogEl.lastChild);
+        }
+
+        function updateSessionProfit(amount) {
+            sessionProfit += amount;
+            if (sessionProfit > 0) {
+                sessionProfitEl.textContent = "+$" + sessionProfit.toFixed(2);
+                sessionProfitEl.className = "text-2xl font-black text-emerald-400";
+            } else if (sessionProfit < 0) {
+                sessionProfitEl.textContent = "-$" + Math.abs(sessionProfit).toFixed(2);
+                sessionProfitEl.className = "text-2xl font-black text-rose-500";
+            } else {
+                sessionProfitEl.textContent = "$0.00";
+                sessionProfitEl.className = "text-2xl font-black text-gray-400";
+            }
+            checkLimits();
+        }
+
+        function checkLimits() {
+            const tp = parseFloat(document.getElementById('targetProfit').value);
+            const sl = parseFloat(document.getElementById('stopLoss').value);
+            
+            if (sessionProfit >= tp) {
+                logTrade(`🎯 TARGET PROFIT REACHED (+$${sessionProfit.toFixed(2)}). Trading Stopped.`, 'win');
+                stopBot();
+            } else if (sessionProfit <= -sl) {
+                logTrade(`🛑 STOP LOSS REACHED (-$${Math.abs(sessionProfit).toFixed(2)}). Trading Stopped.`, 'error');
+                stopBot();
+            }
+        }
+
+        function connectToServer(autoSwitch = false) {
+            if(ws) { ws.close(); return; }
+            
+            // SECURITY FIX: Replaces ALL invisible spaces, tabs, and line breaks from the string.
+            const rawToken = document.getElementById('apiToken').value;
+            const token = rawToken.replace(/\s+/g, ''); 
+            
+            if(!token) { alert("Please enter your API token"); return; }
+            
+            isTrading = false;
+            isSearchingPattern = false;
+            tickHistory = [];
+            openContracts = 0;
+            isAutoSwitching = false; 
+            
+            if (!autoSwitch) {
+                sessionProfit = 0.00;
+                lossCountInBatch = 0;
+                currentStake = parseFloat(document.getElementById('stake').value) || 1.00;
+                updateSessionProfit(0);
+                logTrade("Connecting to Deriv Servers...");
+            } else {
+                logTrade(`Switching market... Analyzing new data.`, 'warn');
+            }
+
+            updateActiveContracts(0);
+            connectBtn.textContent = 'Connecting...';
+            connectBtn.className = "bg-amber-500 text-gray-900 font-bold py-2 px-6 rounded-lg transition-colors shadow-lg uppercase tracking-wider";
+
+            ws = new WebSocket("wss://ws.binaryws.com/websockets/v3?app_id=1089");
+            ws.onopen = () => { ws.send(JSON.stringify({ authorize: token })); };
+
+            ws.onerror = () => {
+                logTrade("Connection failed.", 'error');
+                if(!isAutoSwitching) disconnectFromDeriv();
+            };
+
+            ws.onmessage = (msg) => {
+                const data = JSON.parse(msg.data);
+                
+                if(data.msg_type === 'authorize') {
+                    if(data.error) {
+                        logTrade("Auth Failed: " + data.error.message, 'error');
+                        disconnectFromDeriv();
+                        return;
+                    }
+                    isAuthorized = true;
+                    connectBtn.textContent = 'Disconnect';
+                    connectBtn.className = "bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg border-b-4 border-rose-800 active:border-b-0 active:mt-1 uppercase tracking-wider";
+                    runBulkBtn.disabled = false;
+                    document.getElementById('headerBalance').textContent = "$" + data.authorize.balance.toFixed(2);
+                    matrixStatusTextEl.textContent = "Gathering Data...";
+                    
+                    ws.send(JSON.stringify({ ticks: marketSelect.value }));
+                    ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
+
+                    if (autoSwitch) {
+                        isSearchingPattern = true;
+                        runBulkBtn.innerHTML = "⏹ AWAITING MATRIX PATTERN...";
+                        runBulkBtn.className = "w-full bg-amber-500 text-gray-900 font-black py-4 rounded-xl transition-all shadow-inner uppercase tracking-widest text-base";
+                    }
+                }
+
+                if(data.msg_type === 'balance') document.getElementById('headerBalance').textContent = "$" + data.balance.balance.toFixed(2);
+                if(data.msg_type === 'tick') processTick(data.tick);
+
+                if(data.msg_type === 'buy') {
+                    if(data.error) {
+                        logTrade("Trade Error: " + data.error.message, 'error');
+                        openContracts--;
+                        updateActiveContracts();
+                        if(openContracts <= 0) finalizeBatch();
+                    } else {
+                        logTrade(`Contract Placed: ID ${data.buy.contract_id}`, 'buy');
+                        ws.send(JSON.stringify({ proposal_open_contract: 1, contract_id: data.buy.contract_id, subscribe: 1 }));
+                    }
+                }
+
+                if(data.msg_type === 'proposal_open_contract') {
+                    const contract = data.proposal_open_contract;
+                    if(contract && contract.is_sold) {
+                        openContracts--;
+                        updateActiveContracts();
+                        updateSessionProfit(contract.profit);
+                        
+                        if(contract.status === 'won') {
+                            logTrade(`✅ WON (+$${contract.profit.toFixed(2)}) | ID: ${contract.contract_id}`, 'win');
+                        } else {
+                            logTrade(`❌ LOST (-$${Math.abs(contract.profit).toFixed(2)}) | ID: ${contract.contract_id}`, 'error');
+                            lossCountInBatch++;
+                        }
+                        if (openContracts <= 0) finalizeBatch();
+                    }
+                }
+            };
+            ws.onclose = () => {
+                if (!isAutoSwitching) disconnectFromDeriv();
+            };
+        }
+
+        function updateActiveContracts() {
+            document.getElementById('activeTradesCount').textContent = `${openContracts} Active Trades`;
+        }
+
+        function switchToNextMarket() {
+            let nextIndex = marketSelect.selectedIndex + 1;
+            if (nextIndex >= marketSelect.options.length) nextIndex = 0; 
+            
+            marketSelect.selectedIndex = nextIndex;
+            logTrade(`Switching to: ${marketSelect.options[nextIndex].text}...`, 'warn');
+            
+            isAutoSwitching = true;
+            if(ws) ws.close();
+            setTimeout(() => connectToServer(true), 1000); 
+        }
+
+        function finalizeBatch() {
+            isTrading = false;
+            
+            if (document.getElementById('useMartingale').checked) {
+                const baseStake = parseFloat(document.getElementById('stake').value) || 1.00;
+                const multiplier = parseFloat(document.getElementById('martingaleMultiplier').value) || 1.5;
+                
+                if (lossCountInBatch > 0) {
+                    currentStake = currentStake * multiplier;
+                    logTrade(`Martingale Applied. Next Stake: $${currentStake.toFixed(2)}`, 'warn');
+                } else {
+                    currentStake = baseStake;
+                    logTrade(`Batch Won. Stake Reset: $${currentStake.toFixed(2)}`, 'win');
+                }
+            } else {
+                currentStake = parseFloat(document.getElementById('stake').value) || 1.00;
+            }
+
+            if (lossCountInBatch > 0 && document.getElementById('switchMarketOnLoss').checked) {
+                lossCountInBatch = 0; 
+                switchToNextMarket();
+                return; 
+            }
+            
+            lossCountInBatch = 0; 
+
+            if(runBulkBtn.disabled === false) {
+                isSearchingPattern = true;
+                runBulkBtn.innerHTML = "⏹ AWAITING MATRIX PATTERN...";
+                runBulkBtn.className = "w-full bg-amber-500 text-gray-900 font-black py-4 rounded-xl transition-all shadow-inner uppercase tracking-widest text-base";
+            }
+        }
+
+        function stopBot() {
+            isSearchingPattern = false;
+            runBulkBtn.disabled = true;
+            runBulkBtn.innerHTML = "▶ START DIGIT MATRIX";
+            runBulkBtn.className = "w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-4 rounded-xl transition-all shadow-[0_0_15px_rgba(147,51,234,0.4)] border-b-4 border-purple-800 active:border-b-0 active:mt-1 uppercase tracking-widest text-lg disabled:opacity-50 disabled:cursor-not-allowed";
+            matrixStatusTextEl.textContent = "System Paused";
+            matrixStatusTextEl.className = "text-xs font-bold text-gray-500 mt-1";
+        }
+
+        function executeBot() {
+            if (!isAuthorized || isTrading) return;
+            
+            if (isSearchingPattern) {
+                isSearchingPattern = false;
+                runBulkBtn.innerHTML = "▶ START DIGIT MATRIX";
+                runBulkBtn.className = "w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-4 rounded-xl transition-all shadow-[0_0_15px_rgba(147,51,234,0.4)] border-b-4 border-purple-800 active:border-b-0 active:mt-1 uppercase tracking-widest text-lg";
+                logTrade(`Matrix Scanning PAUSED.`, 'neutral');
+                matrixStatusTextEl.textContent = "Scanning Paused";
+                matrixStatusTextEl.className = "text-xs font-bold text-gray-500 mt-1";
+            } else {
+                isSearchingPattern = true;
+                runBulkBtn.innerHTML = "⏹ AWAITING MATRIX PATTERN...";
+                runBulkBtn.className = "w-full bg-amber-500 text-gray-900 font-black py-4 rounded-xl transition-all shadow-inner uppercase tracking-widest text-base";
+                logTrade(`Matrix Scanning ENGAGED. Monitoring 0,1,2 and 7,8,9...`, 'warn');
+                matrixStatusTextEl.textContent = "Hunting Matrix Match...";
+                matrixStatusTextEl.className = "text-xs font-bold text-amber-500 mt-1 animate-pulse";
+            }
+        }
+
+        function fireBulkExecutionBatch(cType, pred) {
+            const isBulk = document.getElementById('enableBulk').checked;
+            const bulkCount = isBulk ? parseInt(document.getElementById('bulkCount').value) || 1 : 1;
+            const market = document.getElementById('marketSelect').value;
+
+            isTrading = true;
+            isSearchingPattern = false;
+            openContracts = bulkCount;
+            lossCountInBatch = 0;
+            updateActiveContracts();
+
+            runBulkBtn.innerHTML = "⏹ PROCESSING BATCH...";
+            runBulkBtn.className = "w-full bg-fuchsia-600 text-white font-black py-4 rounded-xl transition-all shadow-inner uppercase tracking-widest text-lg disabled:opacity-50 disabled:cursor-not-allowed";
+
+            matrixStatusTextEl.textContent = "Executing Trades...";
+            matrixStatusTextEl.className = "text-xs font-bold text-fuchsia-400 mt-1";
+
+            logTrade(`🚀 PATTERN FOUND! Launching ${bulkCount}x ${cType} on Digit ${pred}`, 'win');
+
+            for (let i = 0; i < bulkCount; i++) {
+                setTimeout(() => {
+                    if(!ws) return;
+                    ws.send(JSON.stringify({
+                        buy: 1, price: 10000, 
+                        parameters: {
+                            amount: parseFloat(currentStake.toFixed(2)), basis: "stake", contract_type: cType, currency: "USD", duration: 1, duration_unit: "t", symbol: market, barrier: pred.toString()
+                        }
+                    }));
+                }, i * 50); 
+            }
+        }
+
+        function disconnectFromDeriv() {
+            isAuthorized = false;
+            isTrading = false;
+            isSearchingPattern = false;
+            ws = null;
+            
+            connectBtn.textContent = 'Connect API';
+            connectBtn.className = "bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg border-b-4 border-purple-800 active:border-b-0 active:mt-1 uppercase tracking-wider";
+            runBulkBtn.disabled = true;
+            runBulkBtn.innerHTML = "▶ START DIGIT MATRIX";
+            runBulkBtn.className = "w-full bg-gray-600 text-gray-400 font-black py-4 rounded-xl transition-all uppercase tracking-widest text-lg cursor-not-allowed";
+
+            document.getElementById('headerBalance').textContent = "-";
+            livePriceTickEl.textContent = "-";
+            matrixStatusTextEl.textContent = "Offline";
+            matrixStatusTextEl.className = "text-xs font-bold text-gray-500 mt-1";
+            openContracts = 0;
+            updateActiveContracts();
+        }
+
+        function switchMarket() {
+            if (isAuthorized) { ws.close(); setTimeout(() => connectToServer(), 500); }
+        }
+
+        function processTick(tick) {
+            const priceStr = tick.quote.toFixed(tick.pip_size);
+            const lastDigit = parseInt(priceStr.slice(-1));
+            livePriceTickEl.textContent = priceStr;
+            
+            tickHistory.push(lastDigit);
+            if(tickHistory.length > 100) tickHistory.shift();
+
+            const counts = new Array(10).fill(0);
+            tickHistory.forEach(d => counts[d]++);
+            const total = tickHistory.length;
+            
+            tickCounterEl.textContent = `Analyzed: ${total}/100 Ticks`;
+
+            const pctArray = new Array(10).fill(0);
+
+            for(let i=0; i<10; i++) {
+                const pct = total > 0 ? Math.round((counts[i]/total)*100) : 0;
+                pctArray[i] = pct;
+                document.getElementById(`dist-pct-${i}`).textContent = pct + "%";
+                
+                let box = document.getElementById(`dist-${i}`);
+                let boxClass = "flex flex-col items-center py-2 rounded-lg border transition-all duration-300 ";
+                
+                if (i <= 2 && pct <= 10 && total > 50) {
+                    boxClass += "bg-purple-900/40 border-purple-500/50 ";
+                    document.getElementById(`dist-pct-${i}`).className = "text-[11px] font-black mt-1 text-purple-400";
+                } else if (i >= 7 && pct <= 10 && total > 50) {
+                    boxClass += "bg-fuchsia-900/40 border-fuchsia-500/50 ";
+                    document.getElementById(`dist-pct-${i}`).className = "text-[11px] font-black mt-1 text-fuchsia-400";
+                } else {
+                    boxClass += "bg-gray-800 border-gray-700 ";
+                    document.getElementById(`dist-pct-${i}`).className = "text-[11px] font-bold mt-1 text-gray-500";
+                }
+                
+                if (i === lastDigit) boxClass += "shadow-[0_0_15px_rgba(255,255,255,0.2)] scale-105 border-white bg-gray-700";
+                
+                if (i >= 3 && i <= 6) boxClass += " opacity-50";
+
+                box.className = boxClass;
+            }
+
+            if (isSearchingPattern && !isTrading && total === 100) {
+                
+                const isOver2Ready = (pctArray[0] <= 10 && pctArray[1] <= 10 && pctArray[2] <= 10);
+                const isUnder7Ready = (pctArray[7] <= 10 && pctArray[8] <= 10 && pctArray[9] <= 10);
+
+                if (isOver2Ready && [0,1,2].includes(lastDigit)) {
+                    fireBulkExecutionBatch("DIGITOVER", 2);
+                } else if (isUnder7Ready && [7,8,9].includes(lastDigit)) {
+                    fireBulkExecutionBatch("DIGITUNDER", 7);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
