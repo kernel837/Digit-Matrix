@@ -187,7 +187,8 @@
         // ==========================================
         // PKCE OAUTH 2.0 IMPLEMENTATION
         // ==========================================
-        const APP_ID = '33D0DAH4aS5gAdqG1EIOK'; 
+        const OAUTH_APP_ID = '33D0DAH4aS5gAdqG1EIOK'; // Alphanumeric for login phase
+        const WS_APP_ID = '1089'; // Numeric for WebSocket trading phase
         const REDIRECT_URI = 'https://kernel837.github.io/Digit-Matrix/';
         let currentDerivToken = null;
 
@@ -221,7 +222,7 @@
 
             const codeChallenge = await generateCodeChallenge(codeVerifier);
             
-            const authUrl = `https://auth.deriv.com/oauth2/auth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&code_challenge=${codeChallenge}&code_challenge_method=S256&state=${state}`;
+            const authUrl = `https://auth.deriv.com/oauth2/auth?client_id=${OAUTH_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&code_challenge=${codeChallenge}&code_challenge_method=S256&state=${state}`;
             window.location.href = authUrl;
         }
 
@@ -229,10 +230,8 @@
             currentDerivToken = null;
             if(ws) ws.close();
             
-            // Clean the URL bar without reloading the page to prevent flash loops
             window.history.replaceState({}, document.title, window.location.pathname);
             
-            // Reset UI
             document.getElementById('authStatus').textContent = "Disconnected 🔴";
             document.getElementById('authStatus').className = "text-sm font-bold text-rose-500";
             
@@ -277,7 +276,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         body: new URLSearchParams({
-                            client_id: APP_ID,
+                            client_id: OAUTH_APP_ID,
                             grant_type: 'authorization_code',
                             code: code,
                             redirect_uri: REDIRECT_URI,
@@ -381,12 +380,10 @@
             if(ws) { ws.close(); return; }
             
             let tokenToUse = currentDerivToken;
-            let activeAppId = APP_ID; 
             
             if (isManual) {
                 const rawToken = document.getElementById('apiToken').value;
                 tokenToUse = rawToken.replace(/[^a-zA-Z0-9_]/g, ''); 
-                activeAppId = '1089'; 
                 if(!tokenToUse) { alert("Please enter your API token"); return; }
             } else if (!currentDerivToken && !isAutoSwitching) {
                 logTrade("Please use the Login button to authenticate.", "error"); 
@@ -411,12 +408,12 @@
 
             updateActiveContracts(0);
 
-            // CHANGED: Using Deriv's modern WebSocket endpoint which supports alphanumeric App IDs
-            ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${activeAppId}`);
+            // FIX: Uses WS_APP_ID (numeric '1089') explicitly for the websocket connection
+            ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${WS_APP_ID}`);
             ws.onopen = () => { ws.send(JSON.stringify({ authorize: tokenToUse })); };
 
             ws.onerror = () => {
-                logTrade("WebSocket connection failed. Endpoint rejected App ID.", 'error');
+                logTrade("WebSocket connection failed.", 'error');
                 if(!isAutoSwitching && !isManual) performLogout();
             };
 
