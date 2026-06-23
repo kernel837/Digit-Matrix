@@ -185,7 +185,7 @@
         }
 
         // ==========================================
-        // PKCE OAUTH 2.0 IMPLEMENTATION (NEW)
+        // PKCE OAUTH 2.0 IMPLEMENTATION
         // ==========================================
         const APP_ID = '33D0DAH4aS5gAdqG1EIOK'; 
         const REDIRECT_URI = 'https://kernel837.github.io/Digit-Matrix/';
@@ -221,16 +221,32 @@
 
             const codeChallenge = await generateCodeChallenge(codeVerifier);
             
-            // Generate the secure code-request URL
             const authUrl = `https://auth.deriv.com/oauth2/auth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&code_challenge=${codeChallenge}&code_challenge_method=S256&state=${state}`;
             window.location.href = authUrl;
         }
 
-        function logout() {
+        function performLogout() {
             currentDerivToken = null;
             if(ws) ws.close();
+            
+            // Clean the URL bar without reloading the page to prevent flash loops
             window.history.replaceState({}, document.title, window.location.pathname);
-            window.location.reload(); 
+            
+            // Reset UI
+            document.getElementById('authStatus').textContent = "Disconnected 🔴";
+            document.getElementById('authStatus').className = "text-sm font-bold text-rose-500";
+            
+            const btn = document.getElementById('loginBtn');
+            btn.textContent = "Login with Deriv";
+            btn.className = "bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-lg border-b-4 border-rose-800 active:border-b-0 active:mt-1 uppercase tracking-wider text-sm";
+            btn.onclick = loginWithDeriv;
+
+            runBulkBtn.disabled = true;
+            document.getElementById('headerBalance').textContent = "-";
+            matrixStatusTextEl.textContent = "Offline";
+            matrixStatusTextEl.className = "text-xs font-bold text-gray-500 mt-1";
+            openContracts = 0;
+            updateActiveContracts();
         }
 
         // Check for return from Deriv Login
@@ -246,7 +262,6 @@
             }
 
             if (code) {
-                // Background Trade: Exchanging Code for Token
                 logTrade("Verifying PKCE Handshake...", "warn");
                 
                 const savedState = sessionStorage.getItem('pkce_state');
@@ -275,7 +290,6 @@
                     if (data.access_token) {
                         currentDerivToken = data.access_token;
                         
-                        // Clean the URL bar so the security code isn't sitting there
                         window.history.replaceState({}, document.title, window.location.pathname);
 
                         document.getElementById('authStatus').textContent = "Authenticated ✅";
@@ -284,7 +298,7 @@
                         const btn = document.getElementById('loginBtn');
                         btn.textContent = "Disconnect & Logout";
                         btn.className = "bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-lg border-b-4 border-gray-800 active:border-b-0 active:mt-1 uppercase tracking-wider text-sm";
-                        btn.onclick = logout;
+                        btn.onclick = performLogout;
 
                         // Proceed to connect to WS automatically
                         connectToServer();
@@ -296,7 +310,6 @@
                 }
             }
         });
-
 
         // ==========================================
         // CORE TRADING LOGIC
@@ -398,12 +411,13 @@
 
             updateActiveContracts(0);
 
-            ws = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${activeAppId}`);
+            // CHANGED: Using Deriv's modern WebSocket endpoint which supports alphanumeric App IDs
+            ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${activeAppId}`);
             ws.onopen = () => { ws.send(JSON.stringify({ authorize: tokenToUse })); };
 
             ws.onerror = () => {
-                logTrade("WebSocket connection failed.", 'error');
-                if(!isAutoSwitching && !isManual) logout();
+                logTrade("WebSocket connection failed. Endpoint rejected App ID.", 'error');
+                if(!isAutoSwitching && !isManual) performLogout();
             };
 
             ws.onmessage = (msg) => {
@@ -412,7 +426,7 @@
                 if(data.msg_type === 'authorize') {
                     if(data.error) {
                         logTrade("Auth Failed: " + data.error.message, 'error');
-                        if(!isManual) logout();
+                        if(!isManual) performLogout();
                         return;
                     }
                     isAuthorized = true;
